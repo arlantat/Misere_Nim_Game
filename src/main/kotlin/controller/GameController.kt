@@ -2,6 +2,7 @@ package org.example.controller
 
 import org.example.model.GameState
 import org.example.service.GameService
+import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*
 
 @RestController
@@ -26,11 +27,13 @@ class GameController(private val gameService: GameService) {
         get() = gameService.getGameState()
         
     @ExceptionHandler(IllegalStateException::class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
     fun handleIllegalState(e: IllegalStateException): Map<String, String> {
         return mapOf("error" to (e.message ?: "Illegal state"))
     }
 
     @ExceptionHandler(IllegalArgumentException::class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
     fun handleIllegalArgument(e: IllegalArgumentException): Map<String, String> {
         return mapOf("error" to (e.message ?: "Invalid argument"))
     }

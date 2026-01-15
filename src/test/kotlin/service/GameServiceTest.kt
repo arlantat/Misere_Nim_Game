@@ -69,10 +69,16 @@ class GameServiceTest {
         assertEquals(1, strategy.calculateMove(2)) // 2-1 = 1
         assertEquals(2, strategy.calculateMove(3)) // 3-2 = 1
         assertEquals(3, strategy.calculateMove(4)) // 4-3 = 1
-        assertEquals(1, strategy.calculateMove(5)) // Losing position, takes 1
+        
+        // Losing positions (remainder 0) should return random move 1..3
+        val move5 = strategy.calculateMove(5)
+        assertTrue(move5 in 1..3)
+        
         assertEquals(1, strategy.calculateMove(6)) // 6-1 = 5
         assertEquals(2, strategy.calculateMove(7)) // 7-2 = 5
         assertEquals(3, strategy.calculateMove(8)) // 8-3 = 5
-        assertEquals(1, strategy.calculateMove(9)) // Losing position, takes 1
+        
+        val move9 = strategy.calculateMove(9)
+        assertTrue(move9 in 1..3)
     }
 }
