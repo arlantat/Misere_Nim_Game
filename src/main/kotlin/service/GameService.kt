@@ -7,56 +7,62 @@ import org.springframework.stereotype.Service
 
 @Service
 class GameService {
-    private var currentState: GameState = GameState(0, Player.HUMAN, GameStatus.FINISHED)
-    private var strategy: Strategy = OptimalStrategy()
+    companion object {
+        const val MIN_MATCHES = 1
+        const val MAX_MATCHES = 3
+        const val DEFAULT_HEAP_SIZE = 13
+    }
+    
+    private var currentState: GameState? = null
+    private var currentStrategy: Strategy = StrategyFactory.createStrategy(StrategyType.OPTIMAL)
 
     fun startNewGame(initialHeap: Int, strategyType: String = "optimal"): GameState {
-        strategy = if (strategyType.lowercase() == "random") {
-            RandomStrategy()
-        } else {
-            OptimalStrategy()
-        }
-        currentState = GameState(initialHeap, Player.HUMAN, GameStatus.IN_PROGRESS)
-        return currentState
+        currentStrategy = StrategyFactory.createStrategy(StrategyType.fromString(strategyType))
+        val newState = GameState(initialHeap, Player.HUMAN, GameStatus.IN_PROGRESS)
+        currentState = newState
+        return newState
     }
 
-    fun getGameState(): GameState = currentState
+    fun getGameState(): GameState? = currentState
 
-    fun makeHumanMove(matches: Int): GameState {
-        if (currentState.status == GameStatus.FINISHED) {
+    fun processTurn(humanMatches: Int): GameState {
+        val state = currentState ?: throw IllegalStateException("Game hasn't started")
+        
+        if (state.status == GameStatus.FINISHED) {
             throw IllegalStateException("Game is already finished")
         }
-        if (currentState.turn != Player.HUMAN) {
+        if (state.turn != Player.HUMAN) {
             throw IllegalStateException("It's not human's turn")
         }
-        if (matches !in 1..3 || matches > currentState.heap) {
-            throw IllegalArgumentException("Invalid move: can take 1-3 matches and not more than current heap")
+        if (humanMatches !in MIN_MATCHES..MAX_MATCHES || humanMatches > state.heap) {
+            throw IllegalArgumentException("Invalid move: can take $MIN_MATCHES-$MAX_MATCHES matches and not more than current heap")
         }
 
-        currentState = applyMove(currentState, matches)
+        var updatedState = applyMove(state, humanMatches)
         
-        if (currentState.status == GameStatus.IN_PROGRESS) {
-            // Automatically trigger computer move if game is not over
-            makeComputerMove()
+        if (updatedState.status == GameStatus.IN_PROGRESS) {
+            val computerMatches = currentStrategy.calculateMove(updatedState.heap)
+            updatedState = applyMove(updatedState, computerMatches)
         }
         
-        return currentState
-    }
-
-    private fun makeComputerMove(): GameState {
-        val matches = strategy.calculateMove(currentState.heap)
-        currentState = applyMove(currentState, matches)
-        return currentState
+        currentState = updatedState
+        return updatedState
     }
 
     private fun applyMove(state: GameState, matches: Int): GameState {
         val newHeap = state.heap - matches
-        if (newHeap == 0) {
-            // Player who took the last match loses
-            val winner = if (state.turn == Player.HUMAN) Player.COMPUTER else Player.HUMAN
-            return state.copy(heap = 0, status = GameStatus.FINISHED, winner = winner)
-        }
+        val winner = if (newHeap == 0) {
+            if (state.turn == Player.HUMAN) Player.COMPUTER else Player.HUMAN
+        } else null
+        
+        val status = if (newHeap == 0) GameStatus.FINISHED else GameStatus.IN_PROGRESS
         val nextPlayer = if (state.turn == Player.HUMAN) Player.COMPUTER else Player.HUMAN
-        return state.copy(heap = newHeap, turn = nextPlayer)
+        
+        return state.copy(
+            heap = newHeap,
+            turn = nextPlayer,
+            status = status,
+            winner = winner
+        )
     }
 }

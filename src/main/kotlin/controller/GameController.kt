@@ -11,7 +11,7 @@ class GameController(private val gameService: GameService) {
 
     @PostMapping("/start")
     fun startGame(
-        @RequestParam(defaultValue = "13") initialHeap: Int,
+        @RequestParam(defaultValue = "${GameService.DEFAULT_HEAP_SIZE}") initialHeap: Int,
         @RequestParam(defaultValue = "optimal") strategy: String
     ): GameState {
         return gameService.startNewGame(initialHeap, strategy)
@@ -19,12 +19,13 @@ class GameController(private val gameService: GameService) {
 
     @PostMapping("/move")
     fun makeMove(@RequestParam matches: Int): GameState {
-        return gameService.makeHumanMove(matches)
+        return gameService.processTurn(matches)
     }
 
-    @get:GetMapping("/state")
-    val gameState: GameState
-        get() = gameService.getGameState()
+    @GetMapping("/state")
+    fun getGameState(): GameState {
+        return gameService.getGameState() ?: throw IllegalStateException("No game in progress")
+    }
         
     @ExceptionHandler(IllegalStateException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
