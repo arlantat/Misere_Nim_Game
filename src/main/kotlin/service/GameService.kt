@@ -16,7 +16,10 @@ class GameService {
     private var currentState: GameState? = null
     private var currentStrategy: Strategy = StrategyFactory.createStrategy(StrategyType.OPTIMAL)
 
-    fun startNewGame(initialHeap: Int, strategyType: String = "optimal"): GameState {
+    fun startNewGame(initialHeap: Int = DEFAULT_HEAP_SIZE, strategyType: String = "optimal"): GameState {
+        if (initialHeap < 1) {
+            throw IllegalArgumentException("Initial heap must be at least 1")
+        }
         currentStrategy = StrategyFactory.createStrategy(StrategyType.fromString(strategyType))
         val newState = GameState(initialHeap, Player.HUMAN, GameStatus.IN_PROGRESS)
         currentState = newState
